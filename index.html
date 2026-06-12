@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ダツイチ新大陸 S1 — ガントチャート</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0f0f13; --surf:#18181f; --surf2:#22222c;
+  --b1:rgba(255,255,255,.07); --b2:rgba(255,255,255,.15);
+  --tx:#e8e6f0; --tx2:#8e8da0; --tx3:#5a5970;
+  --pu:#7c6ee8; --te:#2ec4a0; --co:#e07055; --ac:#a89df5;
+  --wa:#e8b84b; --dn:#4bc98e;
+  --r:6px; --rl:10px;
+  --cw:22px;   /* width of one day column */
+  --rh:30px;   /* task row height */
+  --lw:346px;  /* left panel width: 34+84+158+70 */
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--tx);min-height:100vh;font-size:14px}
+
+/* ── Header ── */
+header{display:flex;align-items:center;justify-content:space-between;padding:0 16px;height:50px;border-bottom:1px solid var(--b2);background:var(--surf);position:sticky;top:0;z-index:200}
+.logo{font-family:'Space Mono',monospace;font-size:12px;font-weight:700;color:var(--ac)}
+.logo span{color:var(--tx2);font-weight:400}
+.hact{display:flex;gap:5px;align-items:center}
+button{font-family:'Noto Sans JP',sans-serif;font-size:12px;cursor:pointer;border-radius:var(--r);border:1px solid var(--b2);background:transparent;color:var(--tx);padding:5px 11px;transition:background .15s;white-space:nowrap}
+button:hover{background:var(--surf2)}
+.bp{background:var(--pu);border-color:var(--pu);color:#fff;font-weight:500}
+.bp:hover{background:#8f81ef}
+.bd{color:#f07070;border-color:rgba(240,112,112,.3)}
+.bd:hover{background:rgba(240,112,112,.1)}
+.bi{padding:3px 5px;font-size:12px;border-color:transparent}
+
+main{padding:16px}
+.legend{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.li{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--tx2)}
+.ld{width:10px;height:10px;border-radius:2px}
+.hint{font-size:11px;color:var(--tx3);margin-left:auto}
+
+/* ── Two-column layout: fixed left + scrollable right ── */
+.gantt-wrap{display:flex;border:1px solid var(--b2);border-radius:var(--rl);background:var(--bg);height:calc(100vh - 130px);min-height:300px;overflow:hidden}
+
+/* LEFT: fixed label panel */
+.g-left{
+  flex-shrink:0;
+  width:var(--lw);
+  border-right:1px solid var(--b2);
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+  z-index:10;
+}
+.g-left-head{
+  display:grid;
+  grid-template-columns:34px 84px 158px 70px;
+  background:var(--surf);
+  border-bottom:1px solid var(--b2);
+  flex-shrink:0;
+}
+.g-left-head-row2{
+  display:grid;
+  grid-template-columns:34px 84px 158px 70px;
+  background:var(--surf);
+  border-bottom:1px solid var(--b2);
+  flex-shrink:0;
+}
+.g-left-body{overflow-y:auto;overflow-x:hidden;flex:1}.g-left-body::-webkit-scrollbar{display:none}
+
+/* RIGHT: scrollable day panel */
+.g-right{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+  min-width:0;
+}
+.g-right-head{
+  flex-shrink:0;
+  background:var(--surf);
+  overflow-x:auto;
+  overflow-y:hidden;
+}
+.g-right-head::-webkit-scrollbar{display:none}
+.g-right-body{flex:1;overflow-x:auto;overflow-y:auto;}
+
+/* Common header cell */
+.hcell{
+  font-family:'Space Mono',monospace;
+  font-size:10px;color:var(--tx3);
+  padding:4px 4px;
+  border-bottom:none;
+  white-space:nowrap;overflow:hidden;
+  display:flex;align-items:center;justify-content:center;
+}
+.hcell.left-align{justify-content:flex-start;padding-left:8px}
+.hcell.month{font-weight:700;color:var(--ac);font-size:11px;border-left:1px solid var(--b2)}
+.hcell.day.mstart{border-left:1px solid var(--b2)}
+.hcell.day.sat{color:#7a9fd4}
+.hcell.day.sun{color:#d47a7a}
+
+/* Month row height */
+.month-row{height:22px}
+/* Day row height */
+.day-row{height:20px;border-bottom:1px solid var(--b2)}
+
+/* Day header grid: each col = --cw */
+.day-grid-head{
+  display:grid;
+  /* set dynamically */
+}
+
+/* ── Task rows ── */
+.g-row{
+  display:contents; /* used for sync */
+}
+
+/* Left row */
+.left-row{
+  display:grid;
+  grid-template-columns:34px 84px 158px 70px;
+  height:var(--rh);
+  border-bottom:1px solid var(--b1);
+}
+.left-row.done .lbl{text-decoration:line-through;color:var(--tx3)}
+.left-row.done .seq{color:var(--dn);opacity:.6}
+.left-row.warn .lbl::after{content:' ⚠';color:var(--wa);font-size:10px}
+
+.cell{display:flex;align-items:center;overflow:hidden;background:var(--bg);font-size:12px}
+.cell.seq{justify-content:center;font-family:'Space Mono',monospace;font-size:10px;color:var(--tx3)}
+.cell.act{justify-content:center;gap:1px;white-space:nowrap}
+.cell.lbl{padding:0 7px;white-space:nowrap;color:var(--tx)}
+.cell.who{padding:0 4px;font-size:11px;color:var(--tx2);white-space:nowrap}
+
+/* Right row: day grid */
+.right-row{
+  display:grid;
+  height:var(--rh);
+  border-bottom:1px solid var(--b1);
+  position:relative;
+}
+/* day cells within right row */
+.dc{background:var(--bg)}
+.dc.mstart{border-left:1px solid var(--b2)}
+.dc.we{background:rgba(255,255,255,.018)}
+
+/* Bar */
+.bar{
+  position:absolute;
+  top:5px;
+  height:20px;
+  border-radius:3px;
+  cursor:pointer;
+  transition:filter .15s;
+  z-index:2;
+}
+.bar:hover{filter:brightness(1.2)}
+.bar.event      {background:var(--pu);box-shadow:0 0 8px rgba(124,110,232,.35)}
+.bar.prep       {background:var(--te);box-shadow:0 0 8px rgba(46,196,160,.25)}
+.bar.deliverable{background:var(--co);box-shadow:0 0 8px rgba(224,112,85,.25)}
+.done .bar{opacity:.35;filter:grayscale(.5)!important}
+.warn .bar{outline:1.5px solid var(--wa);box-shadow:0 0 8px rgba(232,184,75,.3)!important}
+
+.dh{position:absolute;top:0;bottom:0;width:7px;cursor:ew-resize;z-index:3;opacity:0;transition:opacity .15s}
+.bar:hover .dh{opacity:1}
+.dh.dl{left:0}
+.dh.dr{right:0}
+.dh::after{content:'';display:block;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:2px;height:9px;background:rgba(255,255,255,.5);border-radius:1px}
+
+/* Separator row */
+.sep-row-left,.sep-row-right{
+  height:28px;
+  display:flex;align-items:flex-end;
+  padding-bottom:3px;
+  border-top:2px solid var(--b2);
+  border-bottom:1px solid var(--b1);
+  background:var(--bg);
+  font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
+}
+.sep-row-left{padding-left:8px;white-space:nowrap;overflow:hidden}
+.sep-c0{color:var(--pu)!important;border-top-color:var(--pu)!important}
+.sep-c1{color:var(--ac)!important;border-top-color:var(--ac)!important}
+.sep-c2{color:var(--te)!important;border-top-color:var(--te)!important}
+.sep-c3{color:var(--co)!important;border-top-color:var(--co)!important}
+.sep-c4{color:var(--tx2)!important;border-top-color:var(--b2)!important}
+.sep-del{opacity:0;transition:opacity .15s;margin-left:6px;cursor:pointer;background:none;border:none;padding:0;font-size:10px;color:var(--tx3)}
+.sep-row-left:hover .sep-del{opacity:1}
+
+.badge{display:inline-block;background:rgba(255,255,255,.07);border:1px solid var(--b2);border-radius:3px;font-family:'Space Mono',monospace;font-size:9px;padding:1px 4px;color:var(--tx3);margin-left:4px;vertical-align:middle}
+
+/* Modal */
+.mo{position:fixed;inset:0;background:rgba(0,0,0,.68);display:flex;align-items:center;justify-content:center;z-index:300;backdrop-filter:blur(4px)}
+.md{background:var(--surf);border:1px solid var(--b2);border-radius:var(--rl);padding:22px;width:360px;max-width:calc(100vw - 24px);animation:mi .17s ease}
+@keyframes mi{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:none}}
+.md h3{font-size:14px;font-weight:700;margin-bottom:16px}
+.fi{margin-bottom:11px}
+.fi label{display:block;font-size:11px;color:var(--tx2);margin-bottom:4px}
+.fi input,.fi select{width:100%;background:var(--surf2);border:1px solid var(--b2);border-radius:var(--r);color:var(--tx);font-family:'Noto Sans JP',sans-serif;font-size:13px;padding:6px 9px;outline:none;transition:border-color .15s}
+.fi input[type=date]{color-scheme:dark}
+.fi input:focus,.fi select:focus{border-color:var(--pu)}
+.fi select option{background:var(--surf2)}
+.frow{display:flex;gap:9px}
+.frow .fi{flex:1}
+.mbtns{display:flex;gap:7px;justify-content:flex-end;margin-top:18px}
+
+.toast{position:fixed;bottom:18px;right:18px;background:var(--surf2);border:1px solid var(--b2);border-radius:var(--r);padding:8px 14px;font-size:12px;z-index:400;animation:ti .18s ease;pointer-events:none}
+@keyframes ti{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">DATSUCHI <span>/ 新大陸 S1</span></div>
+  <div class="hact">
+    <button onclick="openAddSepModal()">＋ セパレーター</button>
+    <button class="bp" onclick="openAddModal()">＋ タスク追加</button>
+    <div style="width:1px;height:18px;background:var(--b2)"></div>
+    <button onclick="exportJSON()">📤 エクスポート</button>
+    <label style="cursor:pointer;display:contents">
+      <button onclick="this.closest('label').querySelector('input').click()">📥 インポート</button>
+      <input type="file" accept=".json" style="display:none" onchange="importJSON(event)">
+    </label>
+  </div>
+</header>
+<main>
+  <div class="legend">
+    <div class="li"><div class="ld" style="background:var(--pu)"></div>イベント</div>
+    <div class="li"><div class="ld" style="background:var(--te)"></div>準備タスク</div>
+    <div class="li"><div class="ld" style="background:var(--co)"></div>成果物締切</div>
+    <div class="li"><div class="ld" style="background:var(--dn);border-radius:50%"></div>完了</div>
+    <div class="li"><div class="ld" style="background:var(--wa);border-radius:50%"></div>要注意</div>
+    <span class="hint">バー端をドラッグ → 日付変更　／　バーをクリック → 編集　／　編集後は「エクスポート」→ data/gantt.json に上書き → GitHubにコミット</span>
+  </div>
+
+  <div class="gantt-wrap">
+    <div class="g-left" id="g-left">
+      <div class="g-left-head month-row">
+        <div class="hcell left-align" style="grid-column:1/5;font-weight:700;color:var(--tx2)">タスク / 担当</div>
+      </div>
+      <div class="g-left-head-row2 day-row">
+        <div class="hcell" style="font-size:10px;color:var(--tx3)">#</div>
+        <div class="hcell left-align" style="font-size:10px;color:var(--tx3)">操作</div>
+        <div class="hcell left-align" style="font-size:10px;color:var(--tx3)">タスク名</div>
+        <div class="hcell left-align" style="font-size:10px;color:var(--tx3)">担当</div>
+      </div>
+      <div class="g-left-body" id="left-body"></div>
+    </div>
+    <div class="g-right" id="g-right">
+      <div class="g-right-head" id="right-head"></div>
+      <div class="g-right-body" id="right-body"></div>
+    </div>
+  </div>
+</main>
+<div id="modal-root"></div>
+
+<script>
+// ── Date constants (local midnight, no UTC shift) ─────────────────
+const START = new Date(2026, 5, 1);   // 2026-06-01
+const END   = new Date(2026, 7, 31);  // 2026-08-31
+const DAYS  = Math.round((END - START) / 86400000) + 1; // 92
+const CW    = 22; // px per day — must match --cw
+
+// day index from "YYYY-MM-DD"
+function di(s) {
+  const p = s.split('-');
+  return Math.round((new Date(+p[0],+p[1]-1,+p[2]) - START) / 86400000);
+}
+// day index → Date
+function id2d(i) { const d=new Date(START); d.setDate(d.getDate()+i); return d; }
+// Date → "YYYY-MM-DD"
+function d2s(d) { return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+
+// Precompute metadata for each day
+const DM = Array.from({length:DAYS},(_,i)=>{
+  const d=id2d(i);
+  return {i,date:d2s(d),day:d.getDate(),mon:d.getMonth(),dow:d.getDay(),ms:d.getDate()===1};
+});
+
+const MON={5:'6月',6:'7月',7:'8月'};
+const SEP_COLORS=['sep-c0','sep-c1','sep-c2','sep-c3','sep-c4'];
+const SEP_CL=['紫（イベント）','薄紫','ティール（準備）','コーラル（締切）','グレー'];
+
+// ── Default data ──────────────────────────────────────────────────
+function makeItems(){return[
+  {kind:'sep',id:'s1',label:'🗓 イベント（全 Day）',color:'sep-c0'},
+  {kind:'task',id:1, label:'Day 0 方針説明・募集',   who:'全員',           type:'event',       s:di('2026-06-06'),e:di('2026-06-06'),note:'6/6', done:false,warn:false},
+  {kind:'task',id:2, label:'Day 1 Web基本説明',      who:'全員',           type:'event',       s:di('2026-06-20'),e:di('2026-06-20'),note:'6/20',done:false,warn:false},
+  {kind:'task',id:3, label:'Day 2 Web構築・相談',    who:'全員',           type:'event',       s:di('2026-07-04'),e:di('2026-07-04'),note:'7/4', done:false,warn:false},
+  {kind:'task',id:4, label:'Day 3 成果発表・コンペ', who:'全員',           type:'event',       s:di('2026-07-18'),e:di('2026-07-18'),note:'7/18',done:false,warn:false},
+  {kind:'task',id:5, label:'Day 4 アプリ基本説明',   who:'全員',           type:'event',       s:di('2026-08-01'),e:di('2026-08-01'),note:'8/1', done:false,warn:false},
+  {kind:'task',id:6, label:'Day 5 アプリ構築・相談', who:'全員',           type:'event',       s:di('2026-08-15'),e:di('2026-08-15'),note:'8/15',done:false,warn:false},
+  {kind:'task',id:7, label:'Day 6 最終発表',         who:'全員',           type:'event',       s:di('2026-08-29'),e:di('2026-08-29'),note:'8/29',done:false,warn:false},
+  {kind:'sep',id:'s2',label:'📌 Day 0 までの準備（〜6/6）',color:'sep-c1'},
+  {kind:'task',id:8, label:'Day 0 説明資料準備',     who:'ホリーザ',       type:'prep',        s:di('2026-06-01'),e:di('2026-06-06'),note:'',    done:false,warn:false},
+  {kind:'task',id:9, label:'Google Chat 招待',       who:'ホリーザ',       type:'prep',        s:di('2026-06-01'),e:di('2026-08-29'),note:'',    done:false,warn:false},
+  {kind:'sep',id:'s3',label:'📌 Day 1 までの準備（〜6/20）',color:'sep-c2'},
+  {kind:'task',id:10,label:'アプリ要件策定',          who:'ホリーザ',       type:'deliverable', s:di('2026-06-01'),e:di('2026-06-15'),note:'',    done:false,warn:false},
+  {kind:'task',id:11,label:'Web要件定義書作成',       who:'ホリーザ',       type:'deliverable', s:di('2026-06-08'),e:di('2026-06-20'),note:'',    done:false,warn:false},
+  {kind:'task',id:12,label:'Web仕組み基礎説明資料',   who:'カーリー',       type:'deliverable', s:di('2026-06-01'),e:di('2026-06-20'),note:'',    done:false,warn:false},
+  {kind:'task',id:13,label:'Web要件項目整理',         who:'カーリー',       type:'deliverable', s:di('2026-06-01'),e:di('2026-06-20'),note:'',    done:false,warn:false},
+  {kind:'task',id:14,label:'AIコーディング事例・試作',who:'よこさん',       type:'deliverable', s:di('2026-06-01'),e:di('2026-06-20'),note:'',    done:false,warn:false},
+  {kind:'task',id:15,label:'画像生成プロンプト調整',  who:'よこさん',       type:'prep',        s:di('2026-06-01'),e:di('2026-08-29'),note:'',    done:false,warn:false},
+  {kind:'task',id:16,label:'ロゴデザイン案作成',      who:'ふじもっちゃん', type:'deliverable', s:di('2026-06-01'),e:di('2026-06-20'),note:'',    done:false,warn:false},
+  {kind:'sep',id:'s4',label:'📌 Day 3 まで — STEP1: Webサイト',color:'sep-c3'},
+  {kind:'task',id:17,label:'Webサイト制作期間',       who:'参加者',         type:'prep',        s:di('2026-06-20'),e:di('2026-07-18'),note:'',    done:false,warn:false},
+  {kind:'sep',id:'s5',label:'📌 Day 6 まで — STEP2: アプリ',color:'sep-c4'},
+  {kind:'task',id:18,label:'業務自動化アプリ制作',    who:'参加者',         type:'prep',        s:di('2026-08-01'),e:di('2026-08-29'),note:'',    done:false,warn:false},
+];}
+
+let items=makeItems(), nextId=19, nextSepId=6;
+function save(){try{localStorage.setItem('dg5',JSON.stringify({items,nextId,nextSepId}))}catch(e){}}
+function load(){try{const d=localStorage.getItem('dg5');if(d){const p=JSON.parse(d);items=p.items;nextId=p.nextId||19;nextSepId=p.nextSepId||6}}catch(e){}}
+load();
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function cl(v,a,b){return Math.max(a,Math.min(b,v))}
+
+// ── Render ────────────────────────────────────────────────────────
+function render(){
+  save();
+  renderHead();
+  renderBody();
+}
+
+function renderHead(){
+  const rh = document.getElementById('right-head');
+  const totalW = DAYS * CW;
+
+  // Build month row
+  let monthHTML = `<div class="month-row" style="display:flex;width:${totalW}px">`;
+  let i=0;
+  while(i<DAYS){
+    const mon = DM[i].mon;
+    let cnt=0;
+    while(i+cnt<DAYS && DM[i+cnt].mon===mon) cnt++;
+    monthHTML+=`<div class="hcell month" style="width:${cnt*CW}px;flex-shrink:0">${MON[mon]}</div>`;
+    i+=cnt;
+  }
+  monthHTML+=`</div>`;
+
+  // Build day row — each div is exactly CW px
+  let dayHTML = `<div class="day-row" style="display:flex;width:${totalW}px">`;
+  DM.forEach(dm=>{
+    const lbl=(dm.day===1||dm.day%5===1)?dm.day:'';
+    let cls='hcell day';
+    if(dm.ms) cls+=' mstart';
+    if(dm.dow===6) cls+=' sat';
+    if(dm.dow===0) cls+=' sun';
+    dayHTML+=`<div class="${cls}" style="width:${CW}px;flex-shrink:0" title="${dm.date}">${lbl}</div>`;
+  });
+  dayHTML+=`</div>`;
+
+  rh.innerHTML = monthHTML+dayHTML;
+}
+
+function renderBody(){
+  const lb = document.getElementById('left-body');
+  const rb = document.getElementById('right-body');
+  lb.innerHTML=''; rb.innerHTML='';
+  const totalW = DAYS * CW;
+  let seq=0;
+
+  items.forEach(item=>{
+    if(item.kind==='sep'){
+      // Left sep
+      const dl=document.createElement('div');
+      dl.className=`sep-row-left ${item.color}`;
+      dl.innerHTML=esc(item.label)+`<button class="sep-del" onclick="deleteSep('${item.id}')">✕</button>`;
+      lb.appendChild(dl);
+      // Right sep
+      const dr=document.createElement('div');
+      dr.className=`sep-row-right ${item.color}`;
+      dr.style.width=totalW+'px';
+      rb.appendChild(dr);
+      return;
+    }
+
+    seq++;
+    const t=item;
+    const s=cl(t.s,0,DAYS-1), e=cl(t.e,s,DAYS-1);
+
+    // ── Left row ──
+    const dl=document.createElement('div');
+    dl.className='left-row'+(t.done?' done':'')+(t.warn?' warn':'');
+    dl.innerHTML=
+      `<div class="cell seq">${seq}</div>`+
+      `<div class="cell act">
+        <button class="bi" title="${t.done?'未完了に戻す':'完了'}" onclick="toggleDone(${t.id})" style="color:${t.done?'var(--dn)':'var(--tx3)'}">${t.done?'✓':'○'}</button>
+        <button class="bi" title="${t.warn?'要注意解除':'要注意'}" onclick="toggleWarn(${t.id})" style="color:${t.warn?'var(--wa)':'var(--tx3)'}">${t.warn?'🔕':'⚠'}</button>
+        <button class="bi bd" title="削除" onclick="deleteTask(${t.id})">🗑</button>
+      </div>`+
+      `<div class="cell lbl">${esc(t.label)}${t.note?`<span class="badge">${esc(t.note)}</span>`:''}</div>`+
+      `<div class="cell who">${esc(t.who)}</div>`;
+    lb.appendChild(dl);
+
+    // ── Right row ──
+    const dr=document.createElement('div');
+    dr.className='right-row'+(t.done?' done':'')+(t.warn?' warn':'');
+    // Grid: DAYS columns each CW px
+    dr.style.cssText=`width:${totalW}px;grid-template-columns:repeat(${DAYS},${CW}px)`;
+
+    // Day background cells
+    let cellsHTML='';
+    DM.forEach(dm=>{
+      let cls='dc';
+      if(dm.ms) cls+=' mstart';
+      if(dm.dow===6||dm.dow===0) cls+=' we';
+      cellsHTML+=`<div class="${cls}"></div>`;
+    });
+    dr.innerHTML=cellsHTML;
+
+    // Bar: position = s*CW px from left, width = (e-s+1)*CW - 2px
+    const bar=document.createElement('div');
+    bar.className=`bar ${t.type}`;
+    bar.dataset.id=t.id;
+    bar.style.left=(s*CW+1)+'px';
+    bar.style.width=((e-s+1)*CW-2)+'px';
+    bar.innerHTML=`<div class="dh dl" data-id="${t.id}" data-side="l"></div><div class="dh dr" data-id="${t.id}" data-side="r"></div>`;
+    dr.appendChild(bar);
+
+    rb.appendChild(dr);
+  });
+
+  // Events
+  rb.querySelectorAll('.bar').forEach(bar=>{
+    bar.addEventListener('click',ev=>{
+      if(ev.target.classList.contains('dh'))return;
+      openEditModal(+bar.dataset.id);
+    });
+  });
+  rb.querySelectorAll('.dh').forEach(h=>h.addEventListener('mousedown',startDrag));
+
+  // Sync scroll: right-body scrolls, right-head follows
+  const gr=document.getElementById('g-right');
+  // Already handled by flex column; just make sure right-head doesn't scroll
+}
+
+// ── Scroll sync ──────────────────────────────────────────────────
+let syncLock=false;
+function setupScroll(){
+  const lb=document.getElementById('left-body');
+  const rb=document.getElementById('right-body');
+  const rh=document.getElementById('right-head');
+  if(!lb||!rb)return;
+  // Sync vertical: left-body <-> right-body
+  lb.addEventListener('scroll',()=>{if(!syncLock){syncLock=true;rb.scrollTop=lb.scrollTop;syncLock=false;}});
+  rb.addEventListener('scroll',()=>{
+    if(!syncLock){syncLock=true;lb.scrollTop=rb.scrollTop;syncLock=false;}
+    // Sync horizontal header
+    if(rh) rh.scrollLeft=rb.scrollLeft;
+  });
+}
+document.addEventListener('DOMContentLoaded', setupScroll);
+
+// ── Drag ──────────────────────────────────────────────────────────
+function startDrag(e){
+  e.stopPropagation();e.preventDefault();
+  const id=+e.currentTarget.dataset.id, side=e.currentTarget.dataset.side;
+  const orig=JSON.parse(JSON.stringify(items.find(i=>i.id===id)));
+  if(!orig)return;
+  const startX=e.clientX;
+  function onMove(ev){
+    const dd=Math.round((ev.clientX-startX)/CW);
+    const t=items.find(i=>i.id===id);if(!t)return;
+    if(side==='l') t.s=cl(orig.s+dd,0,t.e);
+    else           t.e=cl(orig.e+dd,t.s,DAYS-1);
+    render();
+  }
+  function onUp(){document.removeEventListener('mousemove',onMove);document.removeEventListener('mouseup',onUp);}
+  document.addEventListener('mousemove',onMove);
+  document.addEventListener('mouseup',onUp);
+}
+
+function toggleDone(id){const t=items.find(i=>i.id===id);if(t){t.done=!t.done;if(t.done)t.warn=false;}render();}
+function toggleWarn(id){const t=items.find(i=>i.id===id);if(t){t.warn=!t.warn;if(t.warn)t.done=false;}render();}
+function deleteTask(id){if(!confirm('このタスクを削除しますか？'))return;items=items.filter(i=>!(i.kind==='task'&&i.id===id));render();toast('削除しました');}
+function deleteSep(id){if(!confirm('このセパレーターを削除しますか？'))return;items=items.filter(i=>!(i.kind==='sep'&&i.id===id));render();toast('削除しました');}
+
+function typeOpts(s){return[['event','イベント'],['prep','準備タスク'],['deliverable','成果物締切']].map(([v,l])=>`<option value="${v}"${s===v?' selected':''}>${l}</option>`).join('')}
+function colorOpts(s){return SEP_COLORS.map((c,i)=>`<option value="${c}"${s===c?' selected':''}>${SEP_CL[i]}</option>`).join('')}
+function posOpts(sel){
+  let o=`<option value="0"${sel===0?' selected':''}>先頭（一番上）</option>`;
+  let sq=0;items.forEach(it=>{if(it.kind==='task'){sq++;o+=`<option value="${sq}"${sel===sq?' selected':''}>No.${sq}「${it.label}」の下</option>`;}});
+  return o;
+}
+function insertAt(ni,pos){
+  if(pos<=0){items.unshift(ni);return;}
+  let sq=0;
+  for(let i=0;i<items.length;i++){if(items[i].kind==='task')sq++;if(sq===pos){items.splice(i+1,0,ni);return;}}
+  items.push(ni);
+}
+
+function openEditModal(id){
+  const t=items.find(i=>i.id===id);if(!t)return;
+  const sd=d2s(id2d(cl(t.s,0,DAYS-1))),ed=d2s(id2d(cl(t.e,0,DAYS-1)));
+  mr(`<div class="mo" onclick="if(event.target===this)closeModal()"><div class="md">
+    <h3>タスクを編集</h3>
+    <div class="fi"><label>タスク名</label><input id="e-label" value="${esc(t.label)}"></div>
+    <div class="fi"><label>担当者</label><input id="e-who" value="${esc(t.who)}"></div>
+    <div class="fi"><label>種別</label><select id="e-type">${typeOpts(t.type)}</select></div>
+    <div class="frow"><div class="fi"><label>開始日</label><input type="date" id="e-s" value="${sd}" min="2026-06-01" max="2026-08-31"></div>
+    <div class="fi"><label>終了日</label><input type="date" id="e-e" value="${ed}" min="2026-06-01" max="2026-08-31"></div></div>
+    <div class="fi"><label>バッジ（任意）</label><input id="e-note" value="${esc(t.note||'')}"></div>
+    <div class="mbtns"><button onclick="closeModal()">キャンセル</button><button class="bp" onclick="saveEdit(${id})">保存</button></div>
+  </div></div>`);
+}
+function saveEdit(id){
+  const t=items.find(i=>i.id===id);if(!t)return;
+  t.label=document.getElementById('e-label').value.trim()||t.label;
+  t.who=document.getElementById('e-who').value.trim()||'—';
+  t.type=document.getElementById('e-type').value;
+  const sv=document.getElementById('e-s').value,ev=document.getElementById('e-e').value;
+  if(sv)t.s=cl(di(sv),0,DAYS-1);if(ev)t.e=cl(di(ev),0,DAYS-1);
+  if(t.e<t.s)t.e=t.s;
+  t.note=document.getElementById('e-note').value.trim();
+  closeModal();render();
+}
+
+function openAddModal(){
+  mr(`<div class="mo" onclick="if(event.target===this)closeModal()"><div class="md">
+    <h3>タスクを追加</h3>
+    <div class="fi"><label>タスク名</label><input id="a-label" placeholder="例：キックオフ資料作成"></div>
+    <div class="fi"><label>担当者</label><input id="a-who" placeholder="例：ホリーザ"></div>
+    <div class="fi"><label>種別</label><select id="a-type">${typeOpts('prep')}</select></div>
+    <div class="frow"><div class="fi"><label>開始日</label><input type="date" id="a-s" value="2026-06-01" min="2026-06-01" max="2026-08-31"></div>
+    <div class="fi"><label>終了日</label><input type="date" id="a-e" value="2026-06-01" min="2026-06-01" max="2026-08-31"></div></div>
+    <div class="fi"><label>バッジ（任意）</label><input id="a-note" placeholder="例：6/20"></div>
+    <div class="fi"><label>挿入位置</label><select id="a-pos">${posOpts(-1)}</select></div>
+    <div class="mbtns"><button onclick="closeModal()">キャンセル</button><button class="bp" onclick="saveAdd()">追加</button></div>
+  </div></div>`);
+  setTimeout(()=>document.getElementById('a-label')?.focus(),50);
+}
+function saveAdd(){
+  const label=document.getElementById('a-label').value.trim();if(!label){document.getElementById('a-label').focus();return;}
+  const sv=document.getElementById('a-s').value,ev=document.getElementById('a-e').value;
+  let s=sv?cl(di(sv),0,DAYS-1):0,e=ev?cl(di(ev),0,DAYS-1):s;if(e<s)e=s;
+  insertAt({kind:'task',id:nextId++,label,who:document.getElementById('a-who').value.trim()||'—',type:document.getElementById('a-type').value,s,e,note:document.getElementById('a-note').value.trim(),done:false,warn:false},+document.getElementById('a-pos').value);
+  closeModal();render();toast('タスクを追加しました');
+}
+
+function openAddSepModal(){
+  mr(`<div class="mo" onclick="if(event.target===this)closeModal()"><div class="md">
+    <h3>セパレーターを追加</h3>
+    <div class="fi"><label>ラベル</label><input id="sp-label" placeholder="例：📌 Day 2 までの準備"></div>
+    <div class="fi"><label>カラー</label><select id="sp-color">${colorOpts('sep-c2')}</select></div>
+    <div class="fi"><label>挿入位置</label><select id="sp-pos">${posOpts(-1)}</select></div>
+    <div class="mbtns"><button onclick="closeModal()">キャンセル</button><button class="bp" onclick="saveSep()">追加</button></div>
+  </div></div>`);
+  setTimeout(()=>document.getElementById('sp-label')?.focus(),50);
+}
+function saveSep(){
+  const label=document.getElementById('sp-label').value.trim();if(!label){document.getElementById('sp-label').focus();return;}
+  insertAt({kind:'sep',id:'s'+(nextSepId++),label,color:document.getElementById('sp-color').value},+document.getElementById('sp-pos').value);
+  closeModal();render();toast('セパレーターを追加しました');
+}
+
+function mr(html){document.getElementById('modal-root').innerHTML=html;}
+function closeModal(){document.getElementById('modal-root').innerHTML='';}
+
+function exportJSON(){
+  const b=new Blob([JSON.stringify({items,nextId,nextSepId},null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='gantt.json';a.click();
+  // Show commit instructions
+  setTimeout(()=>toast('💾 gantt.json をダウンロード → data/ フォルダに上書き → GitHubにコミット！'), 100);
+}
+function importJSON(ev){
+  const f=ev.target.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=e=>{try{const d=JSON.parse(e.target.result);if(!Array.isArray(d.items))throw 0;items=d.items;nextId=d.nextId||99;nextSepId=d.nextSepId||99;render();toast('インポートしました');}catch{toast('ファイルが正しくありません');}};
+  r.readAsText(f);ev.target.value='';
+}
+function toast(msg){const el=document.createElement('div');el.className='toast';el.textContent=msg;document.body.appendChild(el);setTimeout(()=>el.remove(),2400);}
+
+// ── GitHub Pages: fetch data/gantt.json on load ──────────────────
+async function loadFromRepo() {
+  try {
+    const res = await fetch('./data/gantt.json?_=' + Date.now());
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data.items)) {
+        items = data.items;
+        nextId = data.nextId || 99;
+        nextSepId = data.nextSepId || 99;
+        render();
+        toast('📂 data/gantt.json を読み込みました');
+        return;
+      }
+    }
+  } catch(e) {}
+  // fallback: use default data
+  render();
+}
+
+loadFromRepo();
+</script>
+</body>
+</html>
