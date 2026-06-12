@@ -1,0 +1,252 @@
+{
+  "items": [
+    {
+      "kind": "sep",
+      "id": "s1",
+      "label": "🗓 イベント（全 Day）",
+      "color": "sep-c0"
+    },
+    {
+      "kind": "task",
+      "id": 1,
+      "label": "Day 0 方針説明・募集",
+      "who": "全員",
+      "type": "event",
+      "s": 5,
+      "e": 5,
+      "note": "6/6",
+      "done": false,
+      "warn": false
+    },
+    {
+      "kind": "task",
+      "id": 2,
+      "label": "Day 1 Web基本説明",
+      "who": "全員",
+      "type": "event",
+      "s": 19,
+      "e": 19,
+      "note": "6/20",
+      "done": false,
+      "warn": false
+    },
+    {
+      "kind": "task",
+      "id": 3,
+      "label": "Day 2 Web構築・相談",
+      "who": "全員",
+      "type": "event",
+      "s": 33,
+      "e": 33,
+      "note": "7/4",
+      "done": false,
+      "warn": false
+    },
+    {
+      "kind": "task",
+      "id": 4,
+      "label": "Day 3 成果発表・コンペ",
+      "who": "全員",
+      "type": "event",
+      "s": 47,
+      "e": 47,
+      "note": "7/18",
+      "done": false,
+      "warn": false
+    },
+    {
+      "kind": "task",
+      "id": 5,
+      "label": "Day 4 アプリ基本説明",
+      "who": "全員",
+      "type": "event",
+      "s": 61,
+      "e": 61,
+      "note": "8/1",
+      "done": false,
+      "warn": false
+    },
+    {
+      "kind": "task",
+      "id": 6,
+      "label": "Day 5 アプリ構築・相談",
+      "who": "全員",
+      "type": "event",
+      "s": 75,
+      "e": 75,
+      "note": "8/15",
+      "done": false,
+      "warn": false
+    },
+    {
+      "kind": "task",
+      "id": 7,
+      "label": "Day 6 最終発表",
+      "who": "全員",
+      "type": "event",
+      "s": 89,
+      "e": 89,
+      "note": "8/29",
+      "done": false,
+      "warn": false
+    },
+    {
+      "kind": "sep",
+      "id": "s2",
+      "label": "📌 Day 0 までの準備（〜6/6）",
+      "color": "sep-c1"
+    },
+    {
+      "kind": "task",
+      "id": 8,
+      "label": "Day 0 説明資料準備",
+      "who": "ホリーザ",
+      "type": "prep",
+      "s": 0,
+      "e": 5,
+      "note": "",
+      "done": false,
+      "warn": false
+    },
+    {
+      "kind": "task",
+      "id": 9,
+      "label": "Google Chat 招待",
+      "who": "ホリーザ",
+      "type": "prep",
+      "s": 0,
+      "e": 89,
+      "note": "",
+      "done": false,
+      "warn": false
+    },
+    {
+      "kind": "sep",
+      "id": "s3",
+      "label": "📌 Day 1 までの準備（〜6/20）",
+      "color": "sep-c2"
+    },
+    {
+      "kind": "task",
+      "id": 10,
+      "label": "アプリ要件策定",
+      "who": "ホリーザ",
+      "type": "deliverable",
+      "s": 0,
+      "e": 14,
+      "note": "",
+      "done": false,
+      "warn": false
+    },
+    {
+      "kind": "task",
+      "id": 11,
+      "label": "Web要件定義書作成",
+      "who": "ホリーザ",
+      "type": "deliverable",
+      "s": 7,
+      "e": 19,
+      "note": "",
+      "done": false,
+      "warn": false
+    },
+    {
+      "kind": "task",
+      "id": 12,
+      "label": "Web仕組み基礎説明資料",
+      "who": "カーリー",
+      "type": "deliverable",
+      "s": 0,
+      "e": 19,
+      "note": "",
+      "done": false,
+      "warn": false
+    },
+    {
+      "kind": "task",
+      "id": 13,
+      "label": "Web要件項目整理",
+      "who": "カーリー",
+      "type": "deliverable",
+      "s": 0,
+      "e": 19,
+      "note": "",
+      "done": false,
+      "warn": false
+    },
+    {
+      "kind": "task",
+      "id": 14,
+      "label": "AIコーディング事例・試作",
+      "who": "よこさん",
+      "type": "deliverable",
+      "s": 0,
+      "e": 19,
+      "note": "",
+      "done": false,
+      "warn": false
+    },
+    {
+      "kind": "task",
+      "id": 15,
+      "label": "画像生成プロンプト調整",
+      "who": "よこさん",
+      "type": "prep",
+      "s": 0,
+      "e": 89,
+      "note": "",
+      "done": false,
+      "warn": false
+    },
+    {
+      "kind": "task",
+      "id": 16,
+      "label": "ロゴデザイン案作成",
+      "who": "ふじもっちゃん",
+      "type": "deliverable",
+      "s": 0,
+      "e": 19,
+      "note": "",
+      "done": false,
+      "warn": false
+    },
+    {
+      "kind": "sep",
+      "id": "s4",
+      "label": "📌 Day 3 まで — STEP1: Webサイト",
+      "color": "sep-c3"
+    },
+    {
+      "kind": "task",
+      "id": 17,
+      "label": "Webサイト制作期間",
+      "who": "参加者",
+      "type": "prep",
+      "s": 19,
+      "e": 47,
+      "note": "",
+      "done": false,
+      "warn": false
+    },
+    {
+      "kind": "sep",
+      "id": "s5",
+      "label": "📌 Day 6 まで — STEP2: アプリ",
+      "color": "sep-c4"
+    },
+    {
+      "kind": "task",
+      "id": 18,
+      "label": "業務自動化アプリ制作",
+      "who": "参加者",
+      "type": "prep",
+      "s": 61,
+      "e": 89,
+      "note": "",
+      "done": false,
+      "warn": false
+    }
+  ],
+  "nextId": 19,
+  "nextSepId": 6
+}
